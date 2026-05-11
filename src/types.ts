@@ -6,6 +6,21 @@ export type Tag = {
   color: string;
 };
 
+// 2.4 チェックリスト
+export type ChecklistItem = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
+// 2.2 コメント
+export type Comment = {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+};
+
 export type Card = {
   id: string;
   title: string;
@@ -15,6 +30,9 @@ export type Card = {
   dueDate: string | null;
   tags: Tag[];
   createdAt: string;
+  checklist: ChecklistItem[];   // 2.4
+  comments: Comment[];          // 2.2
+  archived: boolean;            // 4.3
 };
 
 export type Column = {
@@ -24,13 +42,37 @@ export type Column = {
   cardIds: string[];
 };
 
+// 2.6 ソート
+export type SortBy = 'none' | 'priority' | 'dueDate' | 'createdAt';
+
 export type Board = {
   cards: Record<string, Card>;
   columns: Record<string, Column>;
   columnOrder: string[];
 };
 
-// ── 複数ボード対応 ────────────────────────────────────────────
+// 2.3 活動ログ
+export type ActivityAction =
+  | 'card_created'
+  | 'card_updated'
+  | 'card_moved'
+  | 'card_deleted'
+  | 'card_archived'
+  | 'comment_added'
+  | 'checklist_completed'
+  | 'board_created'
+  | 'board_updated';
+
+export type ActivityEntry = {
+  id: string;
+  boardId: string;
+  cardId?: string;
+  action: ActivityAction;
+  detail: string;
+  timestamp: string;
+};
+
+// 複数ボード
 export type BoardMeta = {
   id: string;
   name: string;
@@ -44,4 +86,5 @@ export type AppState = {
   boards: Record<string, FullBoard>;
   boardOrder: string[];
   activeBoardId: string;
+  activityLog: ActivityEntry[];   // 2.3
 };

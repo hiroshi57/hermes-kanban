@@ -18,6 +18,9 @@ const card: Card = {
   dueDate: '2026-05-15',
   tags: [],
   createdAt: '2026-05-01',
+  checklist: [],
+  comments: [],
+  archived: false,
 };
 
 // ── resolveInitialColumnId ────────────────────────────────────
