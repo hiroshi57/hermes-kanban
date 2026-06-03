@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Plus, Search, Moon, Sun, SlidersHorizontal, X, Keyboard, Activity, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Search, Moon, Sun, SlidersHorizontal, X, Keyboard, Activity, Archive, ArchiveRestore, LogOut } from 'lucide-react';
 import KanbanColumn from '@/components/KanbanColumn';
 import CardModal from '@/components/CardModal';
 import BoardSidebar from '@/components/BoardSidebar';
@@ -12,6 +12,7 @@ import type { AppState, Card, Column, FullBoard, ActivityEntry, ActivityAction, 
 import { loadAppState, saveAppState, initSupabaseSync, subscribeToRealtime } from '@/lib/storage';
 import { matchesFilter, sortCards } from '@/utils/boardUtils';
 import { isOverdue } from '@/utils/date';
+import { useAuth } from '@/contexts/useAuth';
 
 // ─── 活動ログ生成 ────────────────────────────────────────────────
 function makeLog(
@@ -56,6 +57,7 @@ function sendOverdueNotification(titles: string[]) {
 // ─── メインコンポーネント ─────────────────────────────────────────
 export default function App() {
   const [appState, setAppState] = useAppState();
+  const { user, signOut, isConfigured } = useAuth();
   const [darkMode, setDarkMode] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
@@ -493,6 +495,34 @@ export default function App() {
                   hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 {darkMode ? <Sun size={15} /> : <Moon size={15} />}
               </button>
+
+              {/* ユーザーアバター & ログアウト (3.4) */}
+              {isConfigured && user && (
+                <div className="flex items-center gap-1.5">
+                  {user.user_metadata?.['avatar_url'] ? (
+                    <img
+                      src={user.user_metadata['avatar_url'] as string}
+                      alt={user.user_metadata?.['full_name'] as string ?? 'User'}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-600"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center
+                                    text-white text-xs font-bold">
+                      {(user.email ?? '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => signOut()}
+                    title="ログアウト"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700
+                      bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400
+                      hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 hover:border-red-200
+                      transition-colors"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 
