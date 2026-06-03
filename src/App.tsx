@@ -9,7 +9,7 @@ import BoardModal from '@/components/BoardModal';
 import ActivityPanel from '@/components/ActivityPanel';
 import StatsBar from '@/components/StatsBar';
 import type { AppState, Card, Column, FullBoard, ActivityEntry, ActivityAction, SortBy } from '@/types';
-import { loadAppState, saveAppState, initSupabaseSync } from '@/lib/storage';
+import { loadAppState, saveAppState, initSupabaseSync, subscribeToRealtime } from '@/lib/storage';
 import { matchesFilter, sortCards } from '@/utils/boardUtils';
 import { isOverdue } from '@/utils/date';
 
@@ -94,9 +94,11 @@ export default function App() {
     activityLog: [entry, ...(current.activityLog ?? [])].slice(0, 200),
   }), []);
 
-  // ── Supabase 初期化（起動時 1 回）──
+  // ── Supabase 初期化 + Realtime 購読（起動時 1 回）──
   useEffect(() => {
     initSupabaseSync(appState, setAppState);
+    const unsubscribe = subscribeToRealtime(setAppState);
+    return unsubscribe;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

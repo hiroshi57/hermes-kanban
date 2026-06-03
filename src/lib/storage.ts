@@ -94,3 +94,4 @@ export async function initSupabaseSync(
 }
 
 export { isSupabaseConfigured };
+export { subscribeToRealtime } from './realtime';
