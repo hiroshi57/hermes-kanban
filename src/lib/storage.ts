@@ -9,7 +9,7 @@
 import type { AppState } from '@/types';
 import { initialAppState, normalizeAppState } from '@/data';
 import { isSupabaseConfigured } from './supabase';
-import { fetchFromSupabase, saveToSupabase, migrateLocalStorageToSupabase } from './supabase-sync';
+import { fetchFromSupabase, saveToSupabase, migrateLocalStorageToSupabase, claimExistingData } from './supabase-sync';
 
 const LS_KEY = 'hermes-kanban-app-v2';
 
@@ -71,6 +71,9 @@ export async function initSupabaseSync(
   }
 
   try {
+    // 既存のオーナーなしボードを現ユーザーに帰属（初回ログイン時）
+    await claimExistingData();
+
     // localStorage → Supabase 初回マイグレーション
     await migrateLocalStorageToSupabase(currentState);
 
@@ -94,3 +97,4 @@ export async function initSupabaseSync(
 }
 
 export { isSupabaseConfigured };
+export { subscribeToRealtime } from './realtime';

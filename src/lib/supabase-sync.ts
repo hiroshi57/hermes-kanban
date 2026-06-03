@@ -6,6 +6,13 @@ import type { AppState, FullBoard, Card, Column, ActivityEntry } from '@/types';
 import { supabase } from './supabase';
 import { normalizeAppState } from '@/data';
 
+/** 現在ログイン中のユーザー ID を取得（未ログイン時は null） */
+async function getUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 // ── Supabase 行型 ──────────────────────────────────────────────
 interface BoardRow {
   id: string;
@@ -182,13 +189,16 @@ export async function fetchFromSupabase(): Promise<AppState | null> {
 export async function saveToSupabase(state: AppState): Promise<void> {
   if (!supabase) return;
 
+  const userId = await getUserId();
+
   for (const board of state.boardOrder.map(id => state.boards[id]).filter(Boolean)) {
-    // Board upsert
+    // Board upsert（user_id を付与してオーナー管理）
     await supabase.from('boards').upsert({
       id: board.id,
       name: board.name,
       emoji: board.emoji,
       column_order: board.columnOrder,
+      ...(userId ? { user_id: userId } : {}),
     }, { onConflict: 'id' });
 
     // Columns upsert
@@ -277,4 +287,27 @@ export async function migrateLocalStorageToSupabase(state: AppState): Promise<vo
   console.info('[supabase-sync] Migrating localStorage → Supabase...');
   await saveToSupabase(state);
   console.info('[supabase-sync] Migration complete');
+}
+
+/**
+ * 既存の未オーナーボード（user_id = NULL）を
+ * 現在のログインユーザーに帰属させる。
+ *
+ * 用途: 認証未導入時代のデータを初回ログイン後に引き継ぐ。
+ */
+export async function claimExistingData(): Promise<void> {
+  if (!supabase) return;
+  const userId = await getUserId();
+  if (!userId) return;
+
+  const { error } = await supabase
+    .from('boards')
+    .update({ user_id: userId })
+    .is('user_id', null);
+
+  if (error) {
+    console.error('[supabase-sync] claimExistingData error:', error.message);
+  } else {
+    console.info('[supabase-sync] Claimed existing boards to user:', userId);
+  }
 }

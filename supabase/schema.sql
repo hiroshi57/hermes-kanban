@@ -9,6 +9,7 @@ create extension if not exists "pgcrypto";
 -- ── boards ──────────────────────────────────────────────────
 create table if not exists boards (
   id           text primary key default gen_random_uuid()::text,
+  user_id      uuid references auth.users(id) on delete cascade,
   name         text not null,
   emoji        text not null default '📋',
   column_order text[] not null default '{}',
@@ -78,12 +79,51 @@ create trigger cards_updated_at before update on cards
   for each row execute function update_updated_at();
 
 -- ── Row Level Security ──────────────────────────────────────
--- 認証導入時は以下を有効化して適切なポリシーを追加する
--- alter table boards    enable row level security;
--- alter table columns   enable row level security;
--- alter table cards     enable row level security;
--- alter table comments  enable row level security;
--- alter table activity_log enable row level security;
+-- boards は user_id で分離。columns/cards/comments は board を通じて制御。
+alter table boards       enable row level security;
+alter table columns      enable row level security;
+alter table cards        enable row level security;
+alter table comments     enable row level security;
+alter table activity_log enable row level security;
+
+-- boards: 自分の boards のみ、または未オーナー（移行用）
+create policy "boards_owner" on boards
+  for all using (user_id = auth.uid() or user_id is null)
+  with check (user_id = auth.uid() or user_id is null);
+
+-- columns: 親 board が自分のものか未オーナー
+create policy "columns_owner" on columns
+  for all using (
+    board_id in (
+      select id from boards where user_id = auth.uid() or user_id is null
+    )
+  );
+
+-- cards: 親 board が自分のものか未オーナー
+create policy "cards_owner" on cards
+  for all using (
+    board_id in (
+      select id from boards where user_id = auth.uid() or user_id is null
+    )
+  );
+
+-- comments: 親 card が自分のものか未オーナー
+create policy "comments_owner" on comments
+  for all using (
+    card_id in (
+      select c.id from cards c
+      join boards b on b.id = c.board_id
+      where b.user_id = auth.uid() or b.user_id is null
+    )
+  );
+
+-- activity_log: 親 board が自分のものか未オーナー
+create policy "activity_owner" on activity_log
+  for all using (
+    board_id in (
+      select id from boards where user_id = auth.uid() or user_id is null
+    )
+  );
 
 -- ── インデックス ─────────────────────────────────────────────
 create index if not exists idx_cards_board_id   on cards(board_id);

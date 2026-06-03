@@ -1,17 +1,22 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Plus, Search, Moon, Sun, SlidersHorizontal, X, Keyboard, Activity, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Search, Moon, Sun, SlidersHorizontal, X, Keyboard, Activity, Archive, ArchiveRestore, LogOut } from 'lucide-react';
 import KanbanColumn from '@/components/KanbanColumn';
-import CardModal from '@/components/CardModal';
 import BoardSidebar from '@/components/BoardSidebar';
-import BoardModal from '@/components/BoardModal';
-import ActivityPanel from '@/components/ActivityPanel';
 import StatsBar from '@/components/StatsBar';
+// ── オンデマンドでロードするモーダル（コード分割でバンドル削減）──
+const CardModal    = lazy(() => import('@/components/CardModal'));
+const BoardModal   = lazy(() => import('@/components/BoardModal'));
+const ActivityPanel = lazy(() => import('@/components/ActivityPanel'));
 import type { AppState, Card, Column, FullBoard, ActivityEntry, ActivityAction, SortBy } from '@/types';
-import { loadAppState, saveAppState, initSupabaseSync } from '@/lib/storage';
+import { loadAppState, saveAppState, initSupabaseSync, subscribeToRealtime } from '@/lib/storage';
 import { matchesFilter, sortCards } from '@/utils/boardUtils';
 import { isOverdue } from '@/utils/date';
+import { useAuth } from '@/contexts/useAuth';
+import { acceptInvite, popPendingInvite, savePendingInvite, upsertMyProfile } from '@/lib/sharing';
+// ShareBoardModal はオンデマンドで読み込む
+const ShareBoardModal = lazy(() => import('@/components/ShareBoardModal'));
 
 // ─── 活動ログ生成 ────────────────────────────────────────────────
 function makeLog(
@@ -56,6 +61,7 @@ function sendOverdueNotification(titles: string[]) {
 // ─── メインコンポーネント ─────────────────────────────────────────
 export default function App() {
   const [appState, setAppState] = useAppState();
+  const { user, signOut, isConfigured } = useAuth();
   const [darkMode, setDarkMode] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
@@ -78,6 +84,7 @@ export default function App() {
   const [boardModalOpen, setBoardModalOpen] = useState(false);
   const [editingBoard,   setEditingBoard]   = useState<FullBoard | null>(null);
   const [activityOpen,   setActivityOpen]   = useState(false);   // 2.3
+  const [shareBoard,     setShareBoard]     = useState<typeof activeBoard | null>(null); // 3.5
 
   // ── アクティブボード ──
   const activeBoard = appState.boards[appState.activeBoardId];
@@ -94,9 +101,41 @@ export default function App() {
     activityLog: [entry, ...(current.activityLog ?? [])].slice(0, 200),
   }), []);
 
-  // ── Supabase 初期化（起動時 1 回）──
+  // ── Supabase 初期化 + Realtime 購読 + 招待処理（起動時 1 回）──
   useEffect(() => {
-    initSupabaseSync(appState, setAppState);
+    async function init() {
+      // プロフィールを同期（ログイン後のメンバー名表示のため）
+      await upsertMyProfile();
+
+      // URL の ?invite=TOKEN を検出 → localStorage に保存
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('invite');
+      if (urlToken) {
+        savePendingInvite(urlToken);
+        // URL をクリーン（token を消す）
+        const url = new URL(window.location.href);
+        url.searchParams.delete('invite');
+        window.history.replaceState({}, '', url.toString());
+      }
+
+      // 保留中の招待を受諾
+      const pendingToken = popPendingInvite();
+      if (pendingToken) {
+        const result = await acceptInvite(pendingToken);
+        if (result) {
+          // 招待されたボードを選択するよう Supabase から再取得
+          await initSupabaseSync(appState, (next) => {
+            setAppState({ ...next, activeBoardId: result.boardId });
+          });
+        }
+      } else {
+        await initSupabaseSync(appState, setAppState);
+      }
+    }
+
+    init();
+    const unsubscribe = subscribeToRealtime(setAppState);
+    return unsubscribe;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -384,6 +423,7 @@ export default function App() {
           onAdd={() => { setEditingBoard(null); setBoardModalOpen(true); }}
           onEdit={board => { setEditingBoard(board); setBoardModalOpen(true); }}
           onDelete={handleDeleteBoard}
+          onShare={isConfigured ? board => setShareBoard(board) : undefined}
         />
 
         {/* ══ メインエリア ══ */}
@@ -491,6 +531,34 @@ export default function App() {
                   hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 {darkMode ? <Sun size={15} /> : <Moon size={15} />}
               </button>
+
+              {/* ユーザーアバター & ログアウト (3.4) */}
+              {isConfigured && user && (
+                <div className="flex items-center gap-1.5">
+                  {user.user_metadata?.['avatar_url'] ? (
+                    <img
+                      src={user.user_metadata['avatar_url'] as string}
+                      alt={user.user_metadata?.['full_name'] as string ?? 'User'}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-600"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center
+                                    text-white text-xs font-bold">
+                      {(user.email ?? '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => signOut()}
+                    title="ログアウト"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700
+                      bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400
+                      hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 hover:border-red-200
+                      transition-colors"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 
@@ -546,29 +614,40 @@ export default function App() {
         </div>
       </div>
 
-      {/* ══ モーダル群 ══ */}
-      {cardModalOpen && (
-        <CardModal
-          card={editingCard}
-          targetColumnId={addToColumnId}
-          columns={activeBoard.columnOrder.map(id => activeBoard.columns[id]).filter(Boolean) as Column[]}
-          onSave={handleSaveCard}
-          onClose={closeCardModal}
-        />
-      )}
-      {boardModalOpen && (
-        <BoardModal
-          board={editingBoard}
-          onSave={editingBoard ? handleEditBoard : handleAddBoard}
-          onClose={() => { setBoardModalOpen(false); setEditingBoard(null); }}
-        />
-      )}
-      {activityOpen && (
-        <ActivityPanel
-          entries={(appState.activityLog ?? []).filter(e => e.boardId === activeBoard.id)}
-          onClose={() => setActivityOpen(false)}
-        />
-      )}
+      {/* ══ モーダル群（lazy: 初回クリック時だけ JS をロード）══ */}
+      <Suspense fallback={null}>
+        {/* 3.5 共有モーダル */}
+        {shareBoard && (
+          <ShareBoardModal
+            boardId={shareBoard.id}
+            boardName={shareBoard.name}
+            boardEmoji={shareBoard.emoji}
+            onClose={() => setShareBoard(null)}
+          />
+        )}
+        {cardModalOpen && (
+          <CardModal
+            card={editingCard}
+            targetColumnId={addToColumnId}
+            columns={activeBoard.columnOrder.map(id => activeBoard.columns[id]).filter(Boolean) as Column[]}
+            onSave={handleSaveCard}
+            onClose={closeCardModal}
+          />
+        )}
+        {boardModalOpen && (
+          <BoardModal
+            board={editingBoard}
+            onSave={editingBoard ? handleEditBoard : handleAddBoard}
+            onClose={() => { setBoardModalOpen(false); setEditingBoard(null); }}
+          />
+        )}
+        {activityOpen && (
+          <ActivityPanel
+            entries={(appState.activityLog ?? []).filter(e => e.boardId === activeBoard.id)}
+            onClose={() => setActivityOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

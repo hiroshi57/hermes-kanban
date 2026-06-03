@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, LayoutDashboard, Share2 } from 'lucide-react';
 import type { FullBoard } from '@/types';
 
 interface Props {
@@ -9,10 +9,12 @@ interface Props {
   onAdd: () => void;
   onEdit: (board: FullBoard) => void;
   onDelete: (boardId: string) => void;
+  /** 共有モーダルを開く（Supabase 設定済みの場合のみ渡す） */
+  onShare?: (board: FullBoard) => void;
 }
 
 export default function BoardSidebar({
-  boards, activeBoardId, onSelect, onAdd, onEdit, onDelete,
+  boards, activeBoardId, onSelect, onAdd, onEdit, onDelete, onShare,
 }: Props) {
   const [expanded, setExpanded] = useState(true);
 
@@ -82,7 +84,7 @@ export default function BoardSidebar({
                 </span>
               )}
 
-              {/* 編集・削除ボタン（展開時のみ） */}
+              {/* 編集・共有・削除ボタン（展開時のみ） */}
               {expanded && (
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
@@ -92,6 +94,15 @@ export default function BoardSidebar({
                   >
                     <Pencil size={12} />
                   </button>
+                  {onShare && (
+                    <button
+                      onClick={e => { e.stopPropagation(); onShare(board); }}
+                      title="ボードを共有"
+                      className="p-1 rounded text-slate-400 hover:text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                    >
+                      <Share2 size={12} />
+                    </button>
+                  )}
                   {boards.length > 1 && (
                     <button
                       onClick={e => { e.stopPropagation(); onDelete(board.id); }}

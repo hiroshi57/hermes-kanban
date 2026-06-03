@@ -88,3 +88,17 @@ export type AppState = {
   activeBoardId: string;
   activityLog: ActivityEntry[];   // 2.3
 };
+
+// 3.5 チームメンバー管理
+export type MemberRole = 'owner' | 'editor';
+
+export type BoardMember = {
+  id: string;
+  boardId: string;
+  userId: string;
+  role: MemberRole;
+  email?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  createdAt: string;
+};
