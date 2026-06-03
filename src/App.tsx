@@ -17,6 +17,8 @@ import { useAuth } from '@/contexts/useAuth';
 import { acceptInvite, popPendingInvite, savePendingInvite, upsertMyProfile } from '@/lib/sharing';
 // ShareBoardModal はオンデマンドで読み込む
 const ShareBoardModal = lazy(() => import('@/components/ShareBoardModal'));
+// PWA プロンプト（インストール + 更新通知）
+const PwaPrompt = lazy(() => import('@/components/PwaPrompt'));
 
 // ─── 活動ログ生成 ────────────────────────────────────────────────
 function makeLog(
@@ -647,6 +649,11 @@ export default function App() {
             onClose={() => setActivityOpen(false)}
           />
         )}
+      </Suspense>
+
+      {/* ══ PWA プロンプト（インストール促進・更新通知）══ */}
+      <Suspense fallback={null}>
+        <PwaPrompt />
       </Suspense>
     </div>
   );
