@@ -1,13 +1,14 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { Plus, Search, Moon, Sun, SlidersHorizontal, X, Keyboard, Activity, Archive, ArchiveRestore, LogOut } from 'lucide-react';
 import KanbanColumn from '@/components/KanbanColumn';
-import CardModal from '@/components/CardModal';
 import BoardSidebar from '@/components/BoardSidebar';
-import BoardModal from '@/components/BoardModal';
-import ActivityPanel from '@/components/ActivityPanel';
 import StatsBar from '@/components/StatsBar';
+// ── オンデマンドでロードするモーダル（コード分割でバンドル削減）──
+const CardModal    = lazy(() => import('@/components/CardModal'));
+const BoardModal   = lazy(() => import('@/components/BoardModal'));
+const ActivityPanel = lazy(() => import('@/components/ActivityPanel'));
 import type { AppState, Card, Column, FullBoard, ActivityEntry, ActivityAction, SortBy } from '@/types';
 import { loadAppState, saveAppState, initSupabaseSync, subscribeToRealtime } from '@/lib/storage';
 import { matchesFilter, sortCards } from '@/utils/boardUtils';
@@ -578,29 +579,31 @@ export default function App() {
         </div>
       </div>
 
-      {/* ══ モーダル群 ══ */}
-      {cardModalOpen && (
-        <CardModal
-          card={editingCard}
-          targetColumnId={addToColumnId}
-          columns={activeBoard.columnOrder.map(id => activeBoard.columns[id]).filter(Boolean) as Column[]}
-          onSave={handleSaveCard}
-          onClose={closeCardModal}
-        />
-      )}
-      {boardModalOpen && (
-        <BoardModal
-          board={editingBoard}
-          onSave={editingBoard ? handleEditBoard : handleAddBoard}
-          onClose={() => { setBoardModalOpen(false); setEditingBoard(null); }}
-        />
-      )}
-      {activityOpen && (
-        <ActivityPanel
-          entries={(appState.activityLog ?? []).filter(e => e.boardId === activeBoard.id)}
-          onClose={() => setActivityOpen(false)}
-        />
-      )}
+      {/* ══ モーダル群（lazy: 初回クリック時だけ JS をロード）══ */}
+      <Suspense fallback={null}>
+        {cardModalOpen && (
+          <CardModal
+            card={editingCard}
+            targetColumnId={addToColumnId}
+            columns={activeBoard.columnOrder.map(id => activeBoard.columns[id]).filter(Boolean) as Column[]}
+            onSave={handleSaveCard}
+            onClose={closeCardModal}
+          />
+        )}
+        {boardModalOpen && (
+          <BoardModal
+            board={editingBoard}
+            onSave={editingBoard ? handleEditBoard : handleAddBoard}
+            onClose={() => { setBoardModalOpen(false); setEditingBoard(null); }}
+          />
+        )}
+        {activityOpen && (
+          <ActivityPanel
+            entries={(appState.activityLog ?? []).filter(e => e.boardId === activeBoard.id)}
+            onClose={() => setActivityOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
