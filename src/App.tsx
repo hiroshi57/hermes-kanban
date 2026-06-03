@@ -14,6 +14,9 @@ import { loadAppState, saveAppState, initSupabaseSync, subscribeToRealtime } fro
 import { matchesFilter, sortCards } from '@/utils/boardUtils';
 import { isOverdue } from '@/utils/date';
 import { useAuth } from '@/contexts/useAuth';
+import { acceptInvite, popPendingInvite, savePendingInvite, upsertMyProfile } from '@/lib/sharing';
+// ShareBoardModal はオンデマンドで読み込む
+const ShareBoardModal = lazy(() => import('@/components/ShareBoardModal'));
 
 // ─── 活動ログ生成 ────────────────────────────────────────────────
 function makeLog(
@@ -81,6 +84,7 @@ export default function App() {
   const [boardModalOpen, setBoardModalOpen] = useState(false);
   const [editingBoard,   setEditingBoard]   = useState<FullBoard | null>(null);
   const [activityOpen,   setActivityOpen]   = useState(false);   // 2.3
+  const [shareBoard,     setShareBoard]     = useState<typeof activeBoard | null>(null); // 3.5
 
   // ── アクティブボード ──
   const activeBoard = appState.boards[appState.activeBoardId];
@@ -97,9 +101,39 @@ export default function App() {
     activityLog: [entry, ...(current.activityLog ?? [])].slice(0, 200),
   }), []);
 
-  // ── Supabase 初期化 + Realtime 購読（起動時 1 回）──
+  // ── Supabase 初期化 + Realtime 購読 + 招待処理（起動時 1 回）──
   useEffect(() => {
-    initSupabaseSync(appState, setAppState);
+    async function init() {
+      // プロフィールを同期（ログイン後のメンバー名表示のため）
+      await upsertMyProfile();
+
+      // URL の ?invite=TOKEN を検出 → localStorage に保存
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('invite');
+      if (urlToken) {
+        savePendingInvite(urlToken);
+        // URL をクリーン（token を消す）
+        const url = new URL(window.location.href);
+        url.searchParams.delete('invite');
+        window.history.replaceState({}, '', url.toString());
+      }
+
+      // 保留中の招待を受諾
+      const pendingToken = popPendingInvite();
+      if (pendingToken) {
+        const result = await acceptInvite(pendingToken);
+        if (result) {
+          // 招待されたボードを選択するよう Supabase から再取得
+          await initSupabaseSync(appState, (next) => {
+            setAppState({ ...next, activeBoardId: result.boardId });
+          });
+        }
+      } else {
+        await initSupabaseSync(appState, setAppState);
+      }
+    }
+
+    init();
     const unsubscribe = subscribeToRealtime(setAppState);
     return unsubscribe;
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -389,6 +423,7 @@ export default function App() {
           onAdd={() => { setEditingBoard(null); setBoardModalOpen(true); }}
           onEdit={board => { setEditingBoard(board); setBoardModalOpen(true); }}
           onDelete={handleDeleteBoard}
+          onShare={isConfigured ? board => setShareBoard(board) : undefined}
         />
 
         {/* ══ メインエリア ══ */}
@@ -581,6 +616,15 @@ export default function App() {
 
       {/* ══ モーダル群（lazy: 初回クリック時だけ JS をロード）══ */}
       <Suspense fallback={null}>
+        {/* 3.5 共有モーダル */}
+        {shareBoard && (
+          <ShareBoardModal
+            boardId={shareBoard.id}
+            boardName={shareBoard.name}
+            boardEmoji={shareBoard.emoji}
+            onClose={() => setShareBoard(null)}
+          />
+        )}
         {cardModalOpen && (
           <CardModal
             card={editingCard}
