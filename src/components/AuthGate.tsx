@@ -6,12 +6,9 @@
  * - 未ログイン      → LoginPage（Supabase 設定済みの場合のみ）
  * - ログイン済み or 未設定 → children（App 本体）
  */
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import type { ReactNode } from 'react';
-
-// ログイン画面はログイン済みユーザーには不要 → lazy でバンドル分離
-const LoginPage = lazy(() => import('@/components/LoginPage'));
 
 interface Props {
   children: ReactNode;
@@ -33,8 +30,8 @@ function LoadingScreen({ darkMode }: { darkMode: boolean }) {
 }
 
 export default function AuthGate({ children }: Props) {
-  const { user, loading, isConfigured } = useAuth();
-  const [darkMode, setDarkMode] = useState(() =>
+  const { loading } = useAuth();
+  const [darkMode] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches
       : false
@@ -42,18 +39,6 @@ export default function AuthGate({ children }: Props) {
 
   // 初期化中
   if (loading) return <LoadingScreen darkMode={darkMode} />;
-
-  // 認証不要モード: 常にアプリ本体を表示
-  if (false && isConfigured && !user) {
-    return (
-      <Suspense fallback={<LoadingScreen darkMode={darkMode} />}>
-        <LoginPage
-          darkMode={darkMode}
-          onToggleDark={() => setDarkMode(d => !d)}
-        />
-      </Suspense>
-    );
-  }
 
   // ログイン済み or Supabase 未設定（ローカルモード）→ アプリ本体
   return <>{children}</>;
