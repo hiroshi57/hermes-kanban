@@ -43,8 +43,8 @@ export default function AuthGate({ children }: Props) {
   // 初期化中
   if (loading) return <LoadingScreen darkMode={darkMode} />;
 
-  // Supabase 設定済み && 未ログイン → ログイン画面
-  if (isConfigured && !user) {
+  // 認証不要モード: 常にアプリ本体を表示
+  if (false && isConfigured && !user) {
     return (
       <Suspense fallback={<LoadingScreen darkMode={darkMode} />}>
         <LoginPage
