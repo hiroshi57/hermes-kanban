@@ -1,0 +1,38 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "outDir": "dist-runner",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "ignoreDeprecations": "6.0",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "src/runner/**/*",
+    "src/lib/eom/types.ts",
+    "src/lib/eom/llm-adapter.ts",
+    "src/lib/eom/agent-registry.ts",
+    "src/lib/eom/seed-agents.ts",
+    "src/lib/eom/auction-engine.ts",
+    "src/lib/eom/bucket-brigade.ts",
+    "src/lib/eom/economic-selection.ts",
+    "src/lib/eom/decomposer.ts",
+    "src/lib/eom/orchestrator.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-runner",
+    "src/lib/eom/realtime-hooks.ts"
+  ]
+}

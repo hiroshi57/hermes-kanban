@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: system-ui, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  }
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer utilities {
+  /* スクロールバー（細め） */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.4);
+    border-radius: 2px;
+  }
+
+  /* カード選択テキストを無効化（ドラッグ中）*/
+  .select-none {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* フェードイン */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in {
+    animation: fadeIn 0.15s ease-out;
+  }
+}
