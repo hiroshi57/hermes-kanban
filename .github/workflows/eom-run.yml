@@ -1,0 +1,66 @@
+name: EoM Agent Run
+
+on:
+  # 手動実行（カード ID を指定）
+  workflow_dispatch:
+    inputs:
+      card_id:
+        description: 'Kanban card ID to process with EoM agents'
+        required: true
+        type: string
+      board_id:
+        description: 'Board ID (optional, for reference)'
+        required: false
+        type: string
+
+  # Supabase Database Webhook 経由の自動実行
+  # Supabase: Database > Webhooks > cards INSERT
+  # → POST https://api.github.com/repos/{owner}/{repo}/dispatches
+  # → body: {"event_type":"eom-card-trigger","client_payload":{"card_id":"..."}}
+  repository_dispatch:
+    types: [eom-card-trigger]
+
+jobs:
+  run-agents:
+    name: Run EoM Episode
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build runner
+        run: npm run runner:build
+
+      - name: Run EoM Episode
+        run: npm run runner:run
+        env:
+          SUPABASE_URL:          ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:  ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANTHROPIC_API_KEY:     ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
+          CARD_ID: >-
+            ${{
+              github.event_name == 'workflow_dispatch'
+                && github.event.inputs.card_id
+                || github.event.client_payload.card_id
+            }}
+
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eom-run-${{ github.run_id }}
+          path: |
+            dist-runner/
+          retention-days: 7

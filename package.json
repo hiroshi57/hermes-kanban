@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "prepare": "husky"
+    "prepare": "husky",
+    "runner:build": "tsc -p tsconfig.runner.json",
+    "runner:run": "node dist-runner/runner/runner.js"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
@@ -19,9 +21,11 @@
     ]
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.105.4",
     "lucide-react": "^1.14.0",
+    "openai": "^4.98.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

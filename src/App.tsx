@@ -19,6 +19,8 @@ import { acceptInvite, popPendingInvite, savePendingInvite, upsertMyProfile } fr
 const ShareBoardModal = lazy(() => import('@/components/ShareBoardModal'));
 // PWA プロンプト（インストール + 更新通知）
 const PwaPrompt = lazy(() => import('@/components/PwaPrompt'));
+// EoM ダッシュボード（オンデマンド）
+const EomDashboard = lazy(() => import('@/components/EomDashboard'));
 
 // ─── 活動ログ生成 ────────────────────────────────────────────────
 function makeLog(
@@ -68,6 +70,9 @@ export default function App() {
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
   );
+
+  // ── タブ切り替え (kanban | agents) ──
+  const [activeTab, setActiveTab] = useState<'kanban' | 'agents'>('kanban');
 
   // ── フィルター ──
   const [search,         setSearch]         = useState('');
@@ -583,7 +588,41 @@ export default function App() {
             </div>
           )}
 
+          {/* ── タブ切り替え ── */}
+          <div className="flex border-b border-slate-200 dark:border-slate-700 px-5 bg-white dark:bg-slate-900">
+            <button
+              onClick={() => setActiveTab('kanban')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
+                ${activeTab === 'kanban'
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+            >
+              📋 カンバン
+            </button>
+            <button
+              onClick={() => setActiveTab('agents')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
+                ${activeTab === 'agents'
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+            >
+              🤖 エージェント
+            </button>
+          </div>
+
+          {/* ── EoM ダッシュボード ── */}
+          {activeTab === 'agents' && (
+            <main className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+              <Suspense fallback={<div className="p-8 text-center text-slate-400">読込中...</div>}>
+                <EomDashboard darkMode={darkMode} />
+              </Suspense>
+            </main>
+          )}
+
           {/* ── ボード ── */}
+          {activeTab === 'kanban' && (
           <main className="flex-1 overflow-auto">
             <DragDropContext onDragEnd={onDragEnd}>
               <div className="flex gap-4 p-5" style={{ minWidth: 'max-content', minHeight: '100%' }}>
@@ -613,6 +652,7 @@ export default function App() {
               </div>
             </DragDropContext>
           </main>
+          )}
         </div>
       </div>
 
