@@ -72,9 +72,11 @@ begin
 end;
 $$;
 
+drop trigger if exists boards_updated_at on boards;
 create trigger boards_updated_at before update on boards
   for each row execute function update_updated_at();
 
+drop trigger if exists cards_updated_at on cards;
 create trigger cards_updated_at before update on cards
   for each row execute function update_updated_at();
 
@@ -87,11 +89,13 @@ alter table comments     enable row level security;
 alter table activity_log enable row level security;
 
 -- boards: 自分の boards のみ、または未オーナー（移行用）
+drop policy if exists "boards_owner" on boards;
 create policy "boards_owner" on boards
   for all using (user_id = auth.uid() or user_id is null)
   with check (user_id = auth.uid() or user_id is null);
 
 -- columns: 親 board が自分のものか未オーナー
+drop policy if exists "columns_owner" on columns;
 create policy "columns_owner" on columns
   for all using (
     board_id in (
@@ -100,6 +104,7 @@ create policy "columns_owner" on columns
   );
 
 -- cards: 親 board が自分のものか未オーナー
+drop policy if exists "cards_owner" on cards;
 create policy "cards_owner" on cards
   for all using (
     board_id in (
@@ -108,6 +113,7 @@ create policy "cards_owner" on cards
   );
 
 -- comments: 親 card が自分のものか未オーナー
+drop policy if exists "comments_owner" on comments;
 create policy "comments_owner" on comments
   for all using (
     card_id in (
@@ -118,6 +124,7 @@ create policy "comments_owner" on comments
   );
 
 -- activity_log: 親 board が自分のものか未オーナー
+drop policy if exists "activity_owner" on activity_log;
 create policy "activity_owner" on activity_log
   for all using (
     board_id in (

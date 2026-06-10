@@ -81,6 +81,18 @@ create table if not exists eom_wealth_events (
 );
 
 -- ── Row Level Security ─────────────────────────────────────────
+-- 既存ポリシーを先に全削除（冪等実行のため）
+drop policy if exists "eom_agents_read"                 on eom_agents;
+drop policy if exists "eom_agents_service_write"        on eom_agents;
+drop policy if exists "eom_runs_read"                   on eom_runs;
+drop policy if exists "eom_runs_service_write"          on eom_runs;
+drop policy if exists "eom_auctions_read"               on eom_auctions;
+drop policy if exists "eom_auctions_service_write"      on eom_auctions;
+drop policy if exists "eom_bids_read"                   on eom_bids;
+drop policy if exists "eom_bids_service_write"          on eom_bids;
+drop policy if exists "eom_wealth_events_read"          on eom_wealth_events;
+drop policy if exists "eom_wealth_events_service_write" on eom_wealth_events;
+
 alter table eom_agents        enable row level security;
 alter table eom_runs          enable row level security;
 alter table eom_auctions      enable row level security;
