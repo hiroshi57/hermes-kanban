@@ -1,5 +1,10 @@
 # CLAUDE.md — Hermes Kanban
 
+## 本番 URL
+- **アプリ**: https://hermes-kanban-glyy.vercel.app/
+- **Supabase**: https://supabase.com/dashboard/project/mmjqexpnypidgdkjigmz
+- **GitHub**: https://github.com/hiroshi57/hermes-kanban
+
 > **プロジェクト**: hermes-kanban
 > **作成日**: 2026-05-11
 > **言語**: ja / TypeScript
