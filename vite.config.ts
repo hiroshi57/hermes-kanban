@@ -8,7 +8,15 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt',          // ユーザーに更新を通知してから適用
-      includeAssets: ['favicon.svg', 'pwa-icon.svg', 'apple-touch-icon.svg'],
+      includeAssets: [
+        'favicon.svg',
+        'pwa-icon.svg',
+        'pwa-192.png',
+        'pwa-512.png',
+        'apple-touch-icon.png',
+        'apple-touch-icon.svg',
+        'offline.html',
+      ],
       manifest: {
         name: 'Hermes Kanban',
         short_name: 'Hermes',
@@ -18,27 +26,53 @@ export default defineConfig({
         display: 'standalone',
         lang: 'ja',
         start_url: '/',
+        // PNG を先に列挙（iOS/Android Chrome の installability 要件を満たす）
         icons: [
           {
+            src: '/pwa-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            // モダンブラウザ向け SVG（高 DPI・任意サイズ）
             src: '/pwa-icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any',
           },
+        ],
+        // スクリーンショット（Enhanced install prompt 用）
+        screenshots: [
           {
             src: '/pwa-icon.svg',
-            sizes: 'any',
+            sizes: '512x512',
             type: 'image/svg+xml',
-            purpose: 'maskable',
+            form_factor: 'narrow',
+            label: 'Hermes Kanban — カンバンボード',
           },
         ],
       },
       workbox: {
-        // App Shell と静的アセットをキャッシュ
-        globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
-        // Supabase API はキャッシュしない（リアルタイムデータ）
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // App Shell + 静的アセット + PNG アイコンをキャッシュ
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // ── オフラインフォールバック ──────────────────────────────
+        // ナビゲーションリクエストがオフラインで失敗した場合 offline.html を返す
+        navigateFallback: '/offline.html',
+        // API / Supabase はフォールバック対象外
+        navigateFallbackDenylist: [/^\/api\//, /^https:\/\//],
         runtimeCaching: [
           {
             // Google アバター画像をキャッシュ（メンバー表示用）
