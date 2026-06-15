@@ -29,3 +29,7 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Playwright E2E
+playwright-report/
+test-results/
