@@ -39,8 +39,8 @@ Supabase Dashboard → Database → Webhooks → Create new webhook:
 **HTTP Request:**
 - Method: `POST`
 - URL: `https://api.github.com/repos/{owner}/{repo}/dispatches`
-  - `{owner}` = GitHub ユーザー名 (例: `hiroshi57`)
-  - `{repo}` = リポジトリ名 (例: `hermes-kanban`)
+  - `{owner}` = GitHub ユーザー名
+  - `{repo}` = リポジトリ名 (例: `taskzen`)
 
 **Headers:**
 ```

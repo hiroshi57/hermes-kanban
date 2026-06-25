@@ -67,9 +67,9 @@ export default function LoginPage({ darkMode, onToggleDark }: Props) {
               🪄
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Hermes Kanban</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">TaskZen</h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                タスクをスマートに管理する日本語カンバン
+                AIカンバンボードで仕事を整える
               </p>
             </div>
           </div>

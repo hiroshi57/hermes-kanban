@@ -1,11 +1,11 @@
-# CLAUDE.md — Hermes Kanban
+# CLAUDE.md — TaskZen
 
 ## 本番 URL
-- **アプリ**: https://hermes-kanban-glyy.vercel.app/
+- **アプリ**: https://hermes-kanban-glyy.vercel.app/（Vercel再デプロイ後に更新）
 - **Supabase**: https://supabase.com/dashboard/project/mmjqexpnypidgdkjigmz
 - **GitHub**: https://github.com/hiroshi57/hermes-kanban
 
-> **プロジェクト**: hermes-kanban
+> **プロジェクト**: taskzen
 > **作成日**: 2026-05-11
 > **言語**: ja / TypeScript
 

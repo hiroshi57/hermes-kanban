@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'prompt',          // ユーザーに更新を通知してから適用
       includeAssets: ['favicon.svg', 'pwa-icon.svg', 'apple-touch-icon.svg'],
       manifest: {
-        name: 'Hermes Kanban',
-        short_name: 'Hermes',
-        description: 'ドラッグ&ドロップで操作できる日本語カンバンボード。クラウド保存・ダークモード対応。',
+        name: 'TaskZen',
+        short_name: 'TaskZen',
+        description: 'ドラッグ&ドロップで操作できる日本語AIカンバンボード。クラウド保存・ダークモード対応。',
         theme_color: '#6366f1',
         background_color: '#ffffff',
         display: 'standalone',
